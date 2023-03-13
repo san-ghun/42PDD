@@ -23,11 +23,14 @@ const server = http.createServer(app);
 // Create ws server on top of http server, to access and share the port
 const wss = new WebSocket.Server({ server });
 
+const sockets = [];
+
 wss.on("connection", (socket) => {
+    sockets.push(socket);
     console.log("Connected to Browser ✅");
     socket.on("close", () => console.log("Disconnected from Browser"));
     socket.on("message", (message) => {
-        socket.send(message.toString());
+        sockets.forEach((aSocket, i) => aSocket.send(`${message.toString()}`));
     });
 });
 
