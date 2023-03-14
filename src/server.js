@@ -1,6 +1,6 @@
 import http from "http";
+import SocketIO from "socket.io";
 import express from "express";
-import WebSocket from "ws";
 
 const app = express();
 
@@ -15,16 +15,19 @@ app.use("/public", express.static(__dirname + "/public"));
 app.get("/", (req, res) => res.render("home"));
 app.get("/*", (req, res) => res.redirect("/"));
 
-const handleListen = () => console.log(`Listening on http://localhost:3000`);
-// app.listen(3000, handleListen);
+// Create server 
+const httpServer = http.createServer(app);
+const wsServer = SocketIO(httpServer);
 
-// Create a http server 
-const server = http.createServer(app);
+wsServer.on("connection", socket => {
+    console.log(socket);
+})
+
+/* // ### Implementation with ws ###
+import WebSocket from "ws";
 // Create ws server on top of http server, to access and share the port
 const wss = new WebSocket.Server({ server });
-
 const sockets = [];
-
 wss.on("connection", (socket) => {
     sockets.push(socket);
     socket["nickname"] = "Anonymous";
@@ -40,5 +43,7 @@ wss.on("connection", (socket) => {
         }
     });
 });
+*/
 
-server.listen(3000, handleListen);
+const handleListen = () => console.log(`Listening on http://localhost:3000`);
+httpServer.listen(3000, handleListen);
