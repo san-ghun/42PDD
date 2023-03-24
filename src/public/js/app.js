@@ -151,7 +151,19 @@ socket.on("ice", (ice) => {
 // RTC Code
 
 function makeConnection() {
-  myPeerConnection = new RTCPeerConnection();
+  myPeerConnection = new RTCPeerConnection({
+    iceServers: [
+      {
+        urls: [
+          "stun:stun.l.google.come:19302",
+          "stun:stun1.l.google.come:19302",
+          "stun:stun2.l.google.come:19302",
+          "stun:stun3.l.google.come:19302",
+          "stun:stun4.l.google.come:19302",
+        ],
+      },
+    ],
+  });
   myPeerConnection.addEventListener("icecandidate", handleIce);
   myPeerConnection.addEventListener("addstream", handleAddStream);
   myStream.getTracks().forEach((track) => {
