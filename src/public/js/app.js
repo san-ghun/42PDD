@@ -42,7 +42,11 @@ async function getMedia(deviceId) {
   };
   const cameraConstraints = {
     audio: true,
-    video: { deviceId: { exact: deviceId } },
+    video: {
+      deviceId: { exact: deviceId },
+      width: { min: 640, ideal: 1920, max: 1920 },
+      height: { min: 480, ideal: 1080, max: 1080 },
+    },
   };
   try {
     myStream = await navigator.mediaDevices.getUserMedia(
@@ -169,7 +173,6 @@ function makeConnection() {
           "stun:stun1.l.google.come:19302",
           "stun:stun2.l.google.come:19302",
           "stun:stun3.l.google.come:19302",
-          "stun:stun4.l.google.come:19302",
         ],
       },
     ],
