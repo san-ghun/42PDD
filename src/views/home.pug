@@ -6,33 +6,64 @@ html(lang="en")
         meta(name="viewport", content="width=device-width, initial-scale=1.0")
         title devoom
         link(rel="stylesheet", href="https://unpkg.com/@picocss/pico@1.*/css/pico.min.css")
+        link(rel="stylesheet", href="../public/css/style.css")
     body 
-        main
-            div#welcome.container
-                article
-                    header
-                        div.headings
-                            h1 Devoom
-                            h3 A peer-to-peer debugging session
-                    form 
-                        label(for="roomname") Room name
-                            input(placeholder="Enter the room name", required, type="text")
-                            small Create a new room or enter the specific room with room name.
-                        button(type="submit") Enter room
-                    footer Footer
+        //- main
+        div#welcome.container
+            article
+                header
+                    div.headings
+                        h1 Devoom
+                        h3 A peer-to-peer debugging session
+                form 
+                    label(for="roomname") Room name
+                        input(placeholder="Enter the room name", required, type="text")
+                        small Create OR Join a Room 
+                    button(type="submit") Enter room
+                footer 
+                    div.headings
+                        h4 or Meet a Random Peer
+                        h5 Let's explore to meet our random peers
+                    button(type="submit").contrast.outline I'm Feeling Random 🤞
 
 
-            div#call.container
+        div#call.container
+            nav
+                ul 
+                    li 
+                        h1 Devoom
+                ul
+                    li 
+                        details(role="list", dir="rtl")
+                            summary(aria-haspopup="listbox", role="link") Tools
+                            ul(role="listbox") 
+                                li 
+                                    kbd Code-sharing 💻 
+                                li
+                                    a(href="https://codesandbox.io/", target="_blank") CodeSandbox
+                                li 
+                                    a(href="https://replit.com/", target="_blank") Replit
+                                li 
+                                    a(href="https://codeshare.io/", target="_blank") Codeshare.io
+                                li 
+                                    kbd Whiteboard 🎨 
+                                li
+                                    a(href="https://excalidraw.com/", target="_blank") Excalidraw
+                                li
+                                    a(href="https://webwhiteboard.com/", target="_blank") WebWhiteboard
+
+            div.grid
+                div#peersStream
+                    video#peersFace(autoplay, playsinline, width="100%", height="100%")
+                div#myStream
+                    video#myFace(autoplay, playsinline, width="100%", height="100%")
+            article
                 div.grid
-                    div#peersStream
-                        video#peersFace(autoplay, playsinline, width="100%", height="100%")
-                    div#myStream
-                        video#myFace(autoplay, playsinline, width="100%", height="100%")
-                article
-                    div.grid
-                        button#mute Mute
-                        button#camera Camera Off
-                    select#cameras 
-            
-        script(src="/socket.io/socket.io.js") 
-        script(src="/public/js/app.js") 
+                    button#mute Mute
+                    button#camera Camera Off
+                select#cameras 
+
+    script(src="/public/js/commons.js")
+    script(src="/socket.io/socket.io.js") 
+    script(src="/public/js/app.js") 
+    script(src="https://kit.fontawesome.com/0666125320.js", crossorigin="anonymous")
