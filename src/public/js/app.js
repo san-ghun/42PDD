@@ -30,6 +30,7 @@ async function getCameras() {
       const option = document.createElement("option");
       option.value = camera.deviceId;
       option.innerText = camera.label;
+      option.id = "camera";
 
       // set the current camera as selected
       if (currentCamera.label === camera.label) {
@@ -42,11 +43,27 @@ async function getCameras() {
   }
 }
 
-// get media stream based on the given device id
-async function getMedia(deviceId) {
+// Create option element for share screen and append to the existing dropdown
+async function addShareScreen() {
+  try {
+    const option = document.createElement("option");
+    option.id = "screen";
+    option.innerText = "Share Screen";
+    camerasSelect.appendChild(option);
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+// get media stream based on the given device id and media id
+async function getMedia(deviceId, mediaId) {
   const initialConstraints = {
     audio: true,
-    video: { facingMode: "user" },
+    video: {
+      facingMode: "user",
+      width: { min: 640, ideal: 1920, max: 1920 },
+      height: { min: 480, ideal: 1080, max: 1080 },
+    },
   };
   const cameraConstraints = {
     audio: true,
@@ -57,15 +74,30 @@ async function getMedia(deviceId) {
     },
   };
 
+  const screenConstraints = {
+    audio: false,
+    video: {
+      cursor: "always",
+    },
+  };
+
   try {
-    myStream = await navigator.mediaDevices.getUserMedia(
-      deviceId ? cameraConstraints : initialConstraints
-    );
+    if (mediaId === "camera") {
+      myStream = await navigator.mediaDevices.getUserMedia(
+        deviceId ? cameraConstraints : initialConstraints
+      );
+    } else if (mediaId === "screen") {
+      myStream = await navigator.mediaDevices.getDisplayMedia(
+        screenConstraints
+      );
+    }
+
     myFace.srcObject = myStream;
 
-    // if no device id is provided, get available cameras and populate the dropdown menu
+    // if no device id is provided, get available cameras
     if (!deviceId) {
       await getCameras();
+      await addShareScreen();
     }
   } catch (e) {
     console.log(e);
@@ -104,7 +136,8 @@ function handleCameraClick() {
 
 // handle camera selection change event
 async function handleCameraChange() {
-  await getMedia(camerasSelect.value);
+  const mediaId = camerasSelect.options[camerasSelect.selectedIndex].id;
+  await getMedia(camerasSelect.value, mediaId);
 
   // if a peer connection exists, replace the video track with the new stream
   if (myPeerConnection) {
@@ -126,7 +159,7 @@ camerasSelect.addEventListener("input", handleCameraChange);
 async function initCall() {
   welcome.hidden = true;
   call.hidden = false;
-  await getMedia();
+  await getMedia("", "camera");
   makeConnection();
 }
 
@@ -188,13 +221,14 @@ socket.on("ice", (ice) => {
 function makeConnection() {
   myPeerConnection = new RTCPeerConnection({
     iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
       {
         urls: [
-          "stun:stun.l.google.come:19302",
-          "stun:stun1.l.google.come:19302",
-          "stun:stun2.l.google.come:19302",
-          "stun:stun3.l.google.come:19302",
+          "turn:eu-0.turn.peerjs.com:3478",
+          "turn:us-0.turn.peerjs.com:3478",
         ],
+        username: "peerjs",
+        credential: "peerjsp",
       },
     ],
   });
