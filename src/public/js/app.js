@@ -6,6 +6,7 @@ const myFace = document.getElementById("myFace");
 const muteBtn = document.getElementById("mute");
 const cameraBtn = document.getElementById("camera");
 const camerasSelect = document.getElementById("cameras");
+const audiosSelect = document.getElementById("audios");
 const welcome = document.getElementById("welcome");
 const welcomeForm = welcome.querySelector("form");
 
@@ -55,6 +56,31 @@ async function addShareScreen() {
   }
 }
 
+// get available audios and populate the dropdown menu
+async function getAudios() {
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const audios = devices.filter((device) => device.kind === "audioinput");
+    const currentAudio = myStream.getAudioTracks()[0];
+
+    // create option elements for each camera and add them to the select element
+    audios.forEach((audio) => {
+      const option = document.createElement("option");
+      option.value = audio.deviceId;
+      option.innerText = audio.label;
+      option.id = "audio";
+
+      // set the current camera as selected
+      if (currentAudio.label === audio.label) {
+        option.selected = true;
+      }
+      audiosSelect.appendChild(option);
+    });
+  } catch (e) {
+    console.log(e);
+  }
+}
+
 // get media stream based on the given device id and media id
 async function getMedia(deviceId, mediaId) {
   const initialConstraints = {
@@ -77,8 +103,19 @@ async function getMedia(deviceId, mediaId) {
   const screenConstraints = {
     audio: false,
     video: {
+      displaySurface: "window",
       cursor: "always",
     },
+    surfaceSwitching: "include",
+    selfBrowserSurface: "exclude",
+    systemAudio: "include",
+  };
+
+  const audioConstraints = {
+    audio: {
+      deviceId: { exact: deviceId },
+    },
+    video: true,
   };
 
   try {
@@ -90,14 +127,17 @@ async function getMedia(deviceId, mediaId) {
       myStream = await navigator.mediaDevices.getDisplayMedia(
         screenConstraints
       );
+    } else if (mediaId === "audio") {
+      myStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
     }
 
     myFace.srcObject = myStream;
 
-    // if no device id is provided, get available cameras
+    // if no device id is provided, get available cameras and audios
     if (!deviceId) {
       await getCameras();
       await addShareScreen();
+      await getAudios();
     }
   } catch (e) {
     console.log(e);
@@ -149,10 +189,26 @@ async function handleCameraChange() {
   }
 }
 
+// handle audio selection change event
+async function handleAudioChange() {
+  const mediaId = audiosSelect.options[audiosSelect.selectedIndex].id;
+  await getMedia(audiosSelect.value, mediaId);
+
+  // if a peer connection exists, replace the audio track with the new stream
+  if (myPeerConnection) {
+    const audioTrack = myStream.getAudioTracks()[0];
+    const audioSender = myPeerConnection
+      .getSenders()
+      .find((sender) => sender.track.kind === "audio");
+    audioSender.replaceTrack(audioTrack);
+  }
+}
+
 // add event listeners for mute, camera, and camera selection elements
 muteBtn.addEventListener("click", handleMuteClick);
 cameraBtn.addEventListener("click", handleCameraClick);
 camerasSelect.addEventListener("input", handleCameraChange);
+audiosSelect.addEventListener("input", handleAudioChange);
 
 // Welcome Form (join a room)
 // Hide the welcome form and show the call interface, then get media and create the peer connection object
