@@ -5,6 +5,9 @@ Note:
   If you are using an earlier version of Node.js, 
     you will need to use the require() function.
 */
+
+"use strict";
+
 // Import necessary modules
 const http = require("http");
 const socketIO = require("socket.io");

@@ -1,3 +1,5 @@
+"use strict";
+
 const socket = io(); // initialize socket.io connection
 
 // get DOM elements
