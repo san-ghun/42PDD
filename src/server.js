@@ -1,6 +1,14 @@
+/* 
+Note: 
+  The import statement is only available in Node.js versions 
+    that support ES modules (i.e., version 13.2.0 or later). 
+  If you are using an earlier version of Node.js, 
+    you will need to use the require() function.
+*/
 // Import necessary modules
 const http = require("http");
 const socketIO = require("socket.io");
+import { instrument } from "@socket.io/admin-ui";
 const express = require("express");
 
 // Create an Express application
@@ -21,7 +29,16 @@ app.get("/*", (req, res) => res.redirect("/"));
 const httpServer = http.createServer(app);
 
 // Create a WebSocket server using the HTTP server
-const wsServer = socketIO(httpServer);
+// const wsServer = socketIO(httpServer);
+const wsServer = socketIO(httpServer, {
+  cors: {
+    origin: ["https://admin.socket.io"],
+    credentials: true,
+  },
+});
+instrument(wsServer, {
+  auth: false,
+});
 
 // Handle incoming WebSocket connections
 wsServer.on("connection", (socket) => {
@@ -44,6 +61,17 @@ wsServer.on("connection", (socket) => {
   // Handle sending ICE candidates to a room
   socket.on("ice", (ice, roomName) => {
     socket.to(roomName).emit("ice", ice);
+  });
+
+  // TODO: Handle leaving a room and send a bye message
+  socket.on("leave_room", (roomName) => {
+    socket.to(roomName).emit("bye");
+    socket.leave(roomName);
+  });
+
+  // TODO: Handle disconnect
+  socket.on("disconnect", (reason) => {
+    socket.to(socket.roomName).emit("bye", reason);
   });
 });
 
