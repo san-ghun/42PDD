@@ -247,10 +247,7 @@ async function handleLeaveClick(event) {
 
   // Stop PeersStream
   if (peersFace?.srcObject) {
-    peersFace.srcObject.getTracks().forEach((track) => {
-      track.stop();
-    });
-    peersFace.srcObject = null;
+    handleRemoveStream();
   }
 
   // Send "leave-room" message to server
@@ -317,15 +314,11 @@ socket.on("bye", async () => {
 
   // Stop PeersStream
   if (peersFace?.srcObject) {
-    peersFace.srcObject.getTracks().forEach((track) => {
-      track.stop();
-    });
-    peersFace.srcObject = null;
+    handleRemoveStream();
   }
 
-  await myPeerConnection.close();
-  myPeerConnection = undefined;
-  makeConnection();
+  // Close and Create new RTCPeerConnection to standby for peer
+  regenerateConnection();
 });
 
 // RTC Code
@@ -345,9 +338,26 @@ function makeConnection() {
     ],
   });
   myPeerConnection.addEventListener("icecandidate", handleIce);
-  myPeerConnection.addEventListener("addstream", handleAddStream);
+  myPeerConnection.addEventListener("track", handleAddStream);
   myStream.getTracks().forEach((track) => {
     myPeerConnection.addTrack(track, myStream);
+  });
+
+  // add event listeners for ice connection state change and connection state change
+  myPeerConnection.addEventListener("iceconnectionstatechange", () => {
+    console.log(
+      `ICE connection state changed to ${myPeerConnection.iceConnectionState}`
+    );
+    if (myPeerConnection.iceConnectionState === "disconnected") {
+      // handle disconnected state
+      console.log("Peer connection lost");
+      handleRemoveStream();
+      regenerateConnection();
+    } else if (myPeerConnection.iceConnectionState === "failed") {
+      // handle failed state
+      console.log("Peer connection failed");
+      regenerateConnection();
+    }
   });
 }
 
@@ -357,9 +367,9 @@ function handleIce(data) {
   socket.emit("ice", data.candidate, roomName);
 }
 
-// Sets the srcObject of the peersFace element to the data stream.
-function handleAddStream(data) {
-  peersFace.srcObject = data.stream;
+// Sets the srcObject of the peersFace element to the track stream.
+function handleAddStream(track) {
+  peersFace.srcObject = track.streams[0];
 }
 
 // Sets the srcObject of the peersFace element to the null.
@@ -368,4 +378,11 @@ function handleRemoveStream() {
     track.stop();
   });
   peersFace.srcObject = null;
+}
+
+// Close myPeerConnection and Create new RTCPeerConnection
+async function regenerateConnection() {
+  await myPeerConnection.close();
+  myPeerConnection = undefined;
+  makeConnection();
 }
