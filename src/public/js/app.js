@@ -3,8 +3,10 @@ const socket = io(); // initialize socket.io connection
 // get DOM elements
 const call = document.getElementById("call");
 const myFace = document.getElementById("myFace");
-const muteBtn = document.getElementById("mute");
+const peersFace = document.getElementById("peersFace");
+const micBtn = document.getElementById("mic");
 const cameraBtn = document.getElementById("camera");
+const leaveBtn = document.getElementById("leave");
 const camerasSelect = document.getElementById("cameras");
 const audiosSelect = document.getElementById("audios");
 const welcome = document.getElementById("welcome");
@@ -13,12 +15,35 @@ const welcomeForm = welcome.querySelector("form");
 // set initial values
 call.hidden = true;
 let myStream;
-let muted = false;
+let micOff = false;
 let cameraOff = false;
 let roomName;
 let myPeerConnection;
 let myDataChannel;
 
+// Welcome Container with Form (join a room)
+// Hide the welcome form and show the call interface, then get media and create the peer connection object
+async function initCall() {
+  welcome.hidden = true;
+  call.hidden = false;
+  await getMedia("", "camera");
+  makeConnection();
+}
+
+// Handle the submission of the welcome form (joining a room)
+async function handleWelcomeSubmit(event) {
+  event.preventDefault();
+  const input = welcomeForm.querySelector("input");
+  await initCall();
+  socket.emit("join_room", input.value); // Send a "join_room" message to the server with the room name
+  roomName = input.value; // Save the room name in the global variable
+  input.value = ""; // Reset the input field
+}
+
+// Add an event listener to the welcome form's submit event
+welcomeForm.addEventListener("submit", handleWelcomeSubmit);
+
+// Call Container (interact in a room)
 // get available cameras and populate the dropdown menu
 async function getCameras() {
   try {
@@ -144,18 +169,20 @@ async function getMedia(deviceId, mediaId) {
   }
 }
 
-// handle mute button click event
-function handleMuteClick() {
+// handle mic button click event
+function handleMicClick() {
   myStream
     .getAudioTracks()
     .forEach((track) => (track.enabled = !track.enabled));
 
-  if (!muted) {
-    muteBtn.innerText = "Unmute";
-    muted = true;
+  if (!micOff) {
+    micBtn.innerHTML = `<s>Mic.<s>`;
+    micBtn.classList.add("secondary", "outline");
+    micOff = true;
   } else {
-    muteBtn.innerText = "Mute";
-    muted = false;
+    micBtn.innerText = "Mic.";
+    micBtn.classList.remove("secondary", "outline");
+    micOff = false;
   }
 }
 
@@ -166,10 +193,12 @@ function handleCameraClick() {
     .forEach((track) => (track.enabled = !track.enabled));
 
   if (!cameraOff) {
-    cameraBtn.innerText = "Camera On";
+    cameraBtn.innerHTML = `<s>Camera<s>`;
+    cameraBtn.classList.add("secondary", "outline");
     cameraOff = true;
   } else {
-    cameraBtn.innerText = "Camera Off";
+    cameraBtn.innerText = "Camera";
+    cameraBtn.classList.remove("secondary", "outline");
     cameraOff = false;
   }
 }
@@ -204,34 +233,44 @@ async function handleAudioChange() {
   }
 }
 
-// add event listeners for mute, camera, and camera selection elements
-muteBtn.addEventListener("click", handleMuteClick);
+// Handle the "Leave room" button click event
+async function handleLeaveClick(event) {
+  // Disconnect peer connection (WebRTC)
+  myPeerConnection.close();
+  myPeerConnection = null;
+  myDataChannel = null;
+
+  // Stop myStream
+  myStream.getTracks().forEach((track) => {
+    track.stop();
+  });
+
+  // Stop PeersStream
+  if (peersFace?.srcObject) {
+    peersFace.srcObject.getTracks().forEach((track) => {
+      track.stop();
+    });
+    peersFace.srcObject = null;
+  }
+
+  // Send "leave-room" message to server
+  socket.emit("leave_room", roomName);
+  console.log("Sent leave_room message");
+
+  // Display the Welcome Form
+  welcome.hidden = false;
+  call.hidden = true;
+  roomName = "";
+}
+
+// add event listeners for mic, camera, and camera selection elements
+micBtn.addEventListener("click", handleMicClick);
 cameraBtn.addEventListener("click", handleCameraClick);
 camerasSelect.addEventListener("input", handleCameraChange);
 audiosSelect.addEventListener("input", handleAudioChange);
+leaveBtn.addEventListener("click", handleLeaveClick);
 
-// Welcome Form (join a room)
-// Hide the welcome form and show the call interface, then get media and create the peer connection object
-async function initCall() {
-  welcome.hidden = true;
-  call.hidden = false;
-  await getMedia("", "camera");
-  makeConnection();
-}
-
-// Handle the submission of the welcome form (joining a room)
-async function handleWelcomeSubmit(event) {
-  event.preventDefault();
-  const input = welcomeForm.querySelector("input");
-  await initCall();
-  socket.emit("join_room", input.value); // Send a "join_room" message to the server with the room name
-  roomName = input.value; // Save the room name in the global variable
-  input.value = ""; // Reset the input field
-}
-
-// Add an event listener to the welcome form's submit event
-welcomeForm.addEventListener("submit", handleWelcomeSubmit);
-
+// Socket Events
 // Set up socket event listeners
 socket.on("welcome", async () => {
   // When the server sends a "welcome" message
@@ -272,6 +311,23 @@ socket.on("ice", (ice) => {
   myPeerConnection.addIceCandidate(ice);
 });
 
+socket.on("bye", async () => {
+  // When the server sends a "bye" message
+  console.log("received the bye");
+
+  // Stop PeersStream
+  if (peersFace?.srcObject) {
+    peersFace.srcObject.getTracks().forEach((track) => {
+      track.stop();
+    });
+    peersFace.srcObject = null;
+  }
+
+  await myPeerConnection.close();
+  myPeerConnection = undefined;
+  makeConnection();
+});
+
 // RTC Code
 // Creates a new RTCPeerConnection with the given iceServers configuration
 function makeConnection() {
@@ -303,6 +359,13 @@ function handleIce(data) {
 
 // Sets the srcObject of the peersFace element to the data stream.
 function handleAddStream(data) {
-  const peersFace = document.getElementById("peersFace");
   peersFace.srcObject = data.stream;
+}
+
+// Sets the srcObject of the peersFace element to the null.
+function handleRemoveStream() {
+  peersFace.srcObject.getTracks().forEach((track) => {
+    track.stop();
+  });
+  peersFace.srcObject = null;
 }
