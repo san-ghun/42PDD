@@ -7,6 +7,8 @@ html(lang="en")
         title devoom
         link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css")
         link(rel="stylesheet", href="../public/css/style.css")
+        script(src="/public/js/app.js", defer) 
+        script(src="/public/js/commons.js", defer) 
     body 
         //- main
         div#welcome.container
@@ -53,19 +55,20 @@ html(lang="en")
                                     a(href="https://webwhiteboard.com/", target="_blank") WebWhiteboard
 
             div.grid
-                div#peersStream
+                div#peersStream(data-tooltip="When peer join, Right-click and use pip mode for convenience")
                     video#peersFace(autoplay, playsinline, width="100%", height="100%")
                 div#myStream
                     video#myFace(autoplay, playsinline, width="100%", height="100%")
             article
                 div.grid
-                    button#mute Mute
-                    button#camera Camera Off
-                    select#cameras 
-                label(for="audio_input") Audio input
-                select#audios 
+                    button#mic Mic.
+                    button#camera Camera
+                div.grid
+                    label(for="audio_input") Audio input
+                        select#audios 
+                    label(for="video_input") Video input    
+                        select#cameras 
+                button#leave.secondary Leave Room
+                    
 
-    script(src="/public/js/commons.js")
     script(src="/socket.io/socket.io.js") 
-    script(src="/public/js/app.js") 
-    script(src="https://kit.fontawesome.com/0666125320.js", crossorigin="anonymous")
