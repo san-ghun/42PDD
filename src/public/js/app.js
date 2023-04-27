@@ -9,10 +9,17 @@ const peersFace = document.getElementById("peersFace");
 const micBtn = document.getElementById("mic");
 const cameraBtn = document.getElementById("camera");
 const leaveBtn = document.getElementById("leave");
+// const nextBtn = document.getElementById("next");
 const camerasSelect = document.getElementById("cameras");
 const audiosSelect = document.getElementById("audios");
 const welcome = document.getElementById("welcome");
 const welcomeForm = welcome.querySelector("form");
+// const randomSwitch = document.getElementById("random-input");
+// const randomBtn = document.getElementById("random-button");
+const chatBtn = document.getElementById("chat");
+const chatBox = document.getElementById("chat-wrapper");
+const chatList = chatBox.querySelector("#chat-content-wrapper ul");
+const chatTextArea = chatBox.querySelector("form#chat-input textarea");
 
 // set initial values
 call.hidden = true;
@@ -22,6 +29,7 @@ let cameraOff = false;
 let roomName;
 let myPeerConnection;
 let myDataChannel;
+// let randomRoom = false;
 
 // Welcome Container with Form (join a room)
 // Hide the welcome form and show the call interface, then get media and create the peer connection object
@@ -31,6 +39,10 @@ async function initCall() {
   await getMedia("", "camera");
   makeConnection();
 }
+
+// function handleCreateRandom() {
+//   randomRoom = !randomRoom;
+// }
 
 // Handle the submission of the welcome form (joining a room)
 async function handleWelcomeSubmit(event) {
@@ -42,8 +54,16 @@ async function handleWelcomeSubmit(event) {
   input.value = ""; // Reset the input field
 }
 
+// async function handleJoinRandom(event) {
+//   event.preventDefault();
+//   await initCall();
+//   socket.emit("join_random");
+// }
+
 // Add an event listener to the welcome form's submit event
 welcomeForm.addEventListener("submit", handleWelcomeSubmit);
+// randomSwitch.addEventListener("click", handleCreateRandom);
+// randomBtn.addEventListener("click", handleJoinRandom);
 
 // Call Container (interact in a room)
 // get available cameras and populate the dropdown menu
@@ -262,19 +282,66 @@ async function handleLeaveClick(event) {
   roomName = "";
 }
 
+function handleChatClick() {
+  if (chatBox.style.display === "none") {
+    chatBox.style.display = "flex";
+    chatBtn.classList.remove("outline");
+  } else {
+    chatBox.style.display = "none";
+    chatBtn.classList.add("outline");
+  }
+}
+
+function addChatMessage(chatType, msg) {
+  // Create HTML Elements
+  const listElem = document.createElement("li");
+  const divSpacer = document.createElement("div");
+  const divSpanWrapper = document.createElement("div");
+  const span = document.createElement("span");
+
+  // Define Proper class Type
+  listElem.classList.add(chatType);
+  divSpacer.classList.add("chat-spacer");
+  divSpanWrapper.classList.add("chat-span-wrapper");
+
+  // Add Message
+  span.innerText = msg;
+  divSpanWrapper.appendChild(span);
+  listElem.appendChild(divSpacer);
+  listElem.appendChild(divSpanWrapper);
+  chatList.appendChild(listElem);
+
+  // Display chatBox
+  chatBox.style.display = "flex";
+  chatList.scrollTop = chatList.scrollHeight;
+}
+
 // add event listeners for mic, camera, and camera selection elements
 micBtn.addEventListener("click", handleMicClick);
 cameraBtn.addEventListener("click", handleCameraClick);
 camerasSelect.addEventListener("input", handleCameraChange);
 audiosSelect.addEventListener("input", handleAudioChange);
 leaveBtn.addEventListener("click", handleLeaveClick);
+chatBtn.addEventListener("click", handleChatClick);
+chatTextArea.addEventListener("keydown", (keyboardEvent) => {
+  if (keyboardEvent.key === "Enter") {
+    keyboardEvent.preventDefault();
+    const message = chatTextArea.value;
+    myDataChannel?.send(message);
+    addChatMessage("my-chat", message);
+    chatTextArea.value = "";
+  }
+});
 
 // Socket Events
 // Set up socket event listeners
 socket.on("welcome", async () => {
   // When the server sends a "welcome" message
   myDataChannel = myPeerConnection.createDataChannel("chat"); // Create a new data channel named "chat"
-  myDataChannel.addEventListener("message", (event) => console.log(event.data)); // Log any incoming messages to the console
+  myDataChannel.addEventListener("message", (event) => {
+    // Display peer message
+    addChatMessage("peer-chat", event.data);
+  }); // Show incoming messages
   console.log("made data channel available");
   const offer = await myPeerConnection.createOffer();
   myPeerConnection.setLocalDescription(offer);
@@ -286,9 +353,9 @@ socket.on("offer", async (offer) => {
   // When the server sends an "offer" message
   myPeerConnection.addEventListener("datachannel", (event) => {
     myDataChannel = event.channel;
-    myDataChannel.addEventListener("message", (event) =>
-      console.log(event.data)
-    );
+    myDataChannel.addEventListener("message", (event) => {
+      addChatMessage("peer-chat", event.data);
+    });
   }); // Set up the data channel to listen for messages
   console.log("received the offer");
   myPeerConnection.setRemoteDescription(offer);
