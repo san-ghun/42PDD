@@ -81,13 +81,19 @@
 
 @media (max-width: 420px) {
   #chat-wrapper {
-    width: calc(100% - 20px);
+    width: calc(100% - 40px);
   }
 }
 
 @media (max-height: 720px) {
   #chat-wrapper {
-    height: calc(100% - 20px);
+    height: calc(100% - 100px);
+  }
+}
+
+@media (max-height: 1080px) {
+  #chat-wrapper {
+    height: calc(100% - 100px);
   }
 }
 
