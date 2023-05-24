@@ -31,9 +31,6 @@ function init() {
 
   login.hidden = !showLogin;
   welcome.hidden = showLogin;
-  // console.log(pb.authStore.isValid);
-  // console.log(pb.authStore.token);
-  // console.log(pb.authStore.model.id);
 }
 
 async function handleLogin() {
@@ -41,9 +38,33 @@ async function handleLogin() {
     const authData = await pb
       .collection("users")
       .authWithOAuth2({ provider: "fourtytwo" });
+
+    const projectData = authData.meta.rawUser.projects_users.filter(
+      // (project) => project.status === "in_progress"
+      (project) => project.status === "waiting_for_correction"
+    );
+    const inEval = projectData.length > 0 ? true : false;
+
+    const data = {
+      username: `${authData.record.username}`,
+      email: `${authData.record.email}`,
+      emailVisibility: `${authData.record.emailVisibility}`,
+      name: `${authData.meta.name}`,
+      inEvaluation: inEval,
+      kind: `${authData.meta.rawUser.kind}`,
+    };
+
+    const record = await pb
+      .collection("users")
+      .update(`${authData.record.id}`, data);
+
+    localStorage.setItem("userd", JSON.stringify(data));
+
     showLogin = false;
   } catch (error) {
-    loginMessage = error.data.message;
+    loginMessage = error;
+    loginMark.innerHTML = loginMessage;
+    showLogin = true;
   }
   login.hidden = !showLogin;
   welcome.hidden = showLogin;
