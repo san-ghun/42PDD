@@ -52,13 +52,13 @@ wsServer.on("connection", (socket) => {
   });
 
   // Handle sending an offer to a room
-  socket.on("offer", (offer, roomName) => {
-    socket.to(roomName).emit("offer", offer);
+  socket.on("offer", (offer, roomName, username) => {
+    socket.to(roomName).emit("offer", offer, username);
   });
 
   // Handle sending an answer to a room
-  socket.on("answer", (answer, roomName) => {
-    socket.to(roomName).emit("answer", answer);
+  socket.on("answer", (answer, roomName, username) => {
+    socket.to(roomName).emit("answer", answer, username);
   });
 
   // Handle sending ICE candidates to a room
