@@ -60,6 +60,8 @@ async function handleLogin() {
 
     localStorage.setItem("userd", JSON.stringify(data));
 
+    const input = welcomeForm.querySelector("input");
+    input.value = data.username;
     showLogin = false;
   } catch (error) {
     loginMessage = error;

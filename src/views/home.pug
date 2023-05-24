@@ -11,7 +11,7 @@ html(lang="en")
         script(src="/public/js/app.js", defer) 
         script(src="/public/js/themeswitcher.js", defer) 
     body 
-        //- main
+        //- Login
         div#login.container
             article
                 header
@@ -20,6 +20,8 @@ html(lang="en")
                         h3 A peer-to-peer debugging session for 42 School
                 button#login-button Login with 42
                 mark#login-message Welcome!
+
+        //- Welcome
         div#welcome.container
             article
                 header
@@ -27,23 +29,24 @@ html(lang="en")
                         h1 42 Peer Duck Debugging
                         h3 A peer-to-peer debugging session for 42 School
                 form 
-                    label(for="roomname") Room name
-                        input#roomname(type="text", name="roomname", placeholder="Enter the room name", required)
-                        small Create OR Join a Room 
+                    label(for="roomname") Room name (your intra)
+                        input#roomname(type="text", name="roomname", placeholder="Enter the room name", required, readonly)
+                        small Create OR Open a Room 
                     fieldset
                         label(for="switch") 
                             input#random-input(type="checkbox", name="switch", role="switch") 
                             span 
-                                small allow Random Peer to join
+                                small <strong>DO NOT</strong> allow Random Peer to join
                     button(type="submit") Enter room
                 footer 
                     div.headings
                         h4 or Meet a Random Peer
                         h5 Let's explore to meet our random peers
-                    button#random-button.contrast.outline I'm Feeling Random 🤞
-            h4 See you again!
+                    button#random-button.contrast I'm Feeling Random 🤞
+            h3 To Logout!
             button#logout-button.outline Logout
 
+        //- Call
         div#call.container
             nav
                 ul 
