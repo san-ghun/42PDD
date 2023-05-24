@@ -7,10 +7,19 @@ html(lang="en")
         title 42 Peer Duck Debugging
         link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css")
         link(rel="stylesheet", href="../public/css/style.css")
+        script(src="/public/js/pocketbase.umd.js")
         script(src="/public/js/app.js", defer) 
         script(src="/public/js/themeswitcher.js", defer) 
     body 
         //- main
+        div#login.container
+            article
+                header
+                    div.headings
+                        h1 42 Peer Duck Debugging
+                        h3 A peer-to-peer debugging session for 42 School
+                button#login-button Login with 42
+                mark#login-message Welcome!
         div#welcome.container
             article
                 header
@@ -32,7 +41,8 @@ html(lang="en")
                         h4 or Meet a Random Peer
                         h5 Let's explore to meet our random peers
                     button#random-button.contrast.outline I'm Feeling Random 🤞
-
+            h4 See you again!
+            button#logout-button.outline Logout
 
         div#call.container
             nav
@@ -84,6 +94,6 @@ html(lang="en")
                         select#cameras 
                 //- button#next.contrast Next Room
                 button#leave.secondary Leave Room
-                    
 
+    script(src="/public/js/auth.js")
     script(src="/socket.io/socket.io.js") 
