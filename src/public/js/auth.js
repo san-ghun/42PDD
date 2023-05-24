@@ -29,6 +29,9 @@ function init() {
   const auth = JSON.parse(window.localStorage.getItem("pocketbase_auth"));
   pb.authStore.save(auth.token, auth.model);
 
+  const input = welcome.querySelector("input");
+  input.value = auth.model.username;
+
   login.hidden = !showLogin;
   welcome.hidden = showLogin;
 }
