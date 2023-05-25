@@ -51,14 +51,32 @@ wsServer.on("connection", (socket) => {
     socket.to(roomName).emit("welcome");
   });
 
+  // Handle joining a random room and sending a random_welcome message
+  socket.on("join_random", () => {
+    const rooms = wsServer.of("/").adapter.rooms;
+    const regex = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}$");
+
+    const roomKeys = Array.from(rooms.keys());
+    const pubRooms = roomKeys.filter((element) => regex.test(element));
+
+    const length = pubRooms.length;
+    const randomIndex = Math.random() * length;
+    const roundedIndex = Math.floor(randomIndex);
+
+    const theRoom = pubRooms[roundedIndex];
+
+    socket.join(theRoom);
+    socket.to(theRoom).emit("welcome");
+  });
+
   // Handle sending an offer to a room
-  socket.on("offer", (offer, roomName, username) => {
-    socket.to(roomName).emit("offer", offer, username);
+  socket.on("offer", (offer, roomName, useremail) => {
+    socket.to(roomName).emit("offer", offer, roomName, useremail);
   });
 
   // Handle sending an answer to a room
-  socket.on("answer", (answer, roomName, username) => {
-    socket.to(roomName).emit("answer", answer, username);
+  socket.on("answer", (answer, roomName, useremail) => {
+    socket.to(roomName).emit("answer", answer, useremail);
   });
 
   // Handle sending ICE candidates to a room
