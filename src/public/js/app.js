@@ -3,19 +3,25 @@
 const socket = io(); // initialize socket.io connection
 
 // get DOM elements
+const welcome = document.getElementById("welcome");
+const welcomeForm = welcome.querySelector("form");
+// const randomSwitch = document.getElementById("random-input");
+const randomBtn = document.getElementById("random-button");
+
 const call = document.getElementById("call");
-const myFace = document.getElementById("myFace");
+const peersVideo = document.getElementById("peersVideo");
 const peersFace = document.getElementById("peersFace");
+const peersLabel = peersVideo.querySelector("small");
+const myVideo = document.getElementById("myVideo");
+const myFace = document.getElementById("myFace");
+const myLabel = myVideo.querySelector("small");
 const micBtn = document.getElementById("mic");
 const cameraBtn = document.getElementById("camera");
 const leaveBtn = document.getElementById("leave");
 // const nextBtn = document.getElementById("next");
 const camerasSelect = document.getElementById("cameras");
 const audiosSelect = document.getElementById("audios");
-const welcome = document.getElementById("welcome");
-const welcomeForm = welcome.querySelector("form");
-// const randomSwitch = document.getElementById("random-input");
-// const randomBtn = document.getElementById("random-button");
+
 const chatBtn = document.getElementById("chat");
 const chatBox = document.getElementById("chat-wrapper");
 const chatList = chatBox.querySelector("#chat-content-wrapper ul");
@@ -38,11 +44,9 @@ async function initCall() {
   call.hidden = false;
   await getMedia("", "camera");
   makeConnection();
+  const userd = JSON.parse(localStorage.getItem("userd"));
+  myLabel.innerHTML = `${userd.email}`;
 }
-
-// function handleCreateRandom() {
-//   randomRoom = !randomRoom;
-// }
 
 // Handle the submission of the welcome form (joining a room)
 async function handleWelcomeSubmit(event) {
@@ -51,19 +55,23 @@ async function handleWelcomeSubmit(event) {
   await initCall();
   socket.emit("join_room", input.value); // Send a "join_room" message to the server with the room name
   roomName = input.value; // Save the room name in the global variable
-  input.value = ""; // Reset the input field
+  // input.value = ""; // Reset the input field
 }
 
-// async function handleJoinRandom(event) {
-//   event.preventDefault();
-//   await initCall();
-//   socket.emit("join_random");
+// function handleCreateRandom() {
+//   randomRoom = !randomRoom;
 // }
+
+async function handleJoinRandom(event) {
+  event.preventDefault();
+  await initCall();
+  socket.emit("join_random");
+}
 
 // Add an event listener to the welcome form's submit event
 welcomeForm.addEventListener("submit", handleWelcomeSubmit);
 // randomSwitch.addEventListener("click", handleCreateRandom);
-// randomBtn.addEventListener("click", handleJoinRandom);
+randomBtn.addEventListener("click", handleJoinRandom);
 
 // Call Container (interact in a room)
 // get available cameras and populate the dropdown menu
@@ -165,6 +173,7 @@ async function getMedia(deviceId, mediaId) {
     video: true,
   };
 
+  // TODO: Need remote testing after deploying development server
   try {
     if (mediaId === "camera") {
       myStream = await navigator.mediaDevices.getUserMedia(
@@ -336,6 +345,9 @@ chatTextArea.addEventListener("keydown", (keyboardEvent) => {
 // Socket Events
 // Set up socket event listeners
 socket.on("welcome", async () => {
+  const userd = JSON.parse(localStorage.getItem("userd"));
+  myLabel.innerHTML = `${userd.email}`;
+
   // When the server sends a "welcome" message
   myDataChannel = myPeerConnection.createDataChannel("chat"); // Create a new data channel named "chat"
   myDataChannel.addEventListener("message", (event) => {
@@ -346,11 +358,16 @@ socket.on("welcome", async () => {
   const offer = await myPeerConnection.createOffer();
   myPeerConnection.setLocalDescription(offer);
   console.log("sent the offer");
-  socket.emit("offer", offer, roomName);
+  socket.emit("offer", offer, roomName, userd.email);
 });
 
-socket.on("offer", async (offer) => {
+socket.on("offer", async (offer, rm, useremail) => {
+  const userd = JSON.parse(localStorage.getItem("userd"));
+  peersLabel.innerHTML = `${useremail}`;
+
   // When the server sends an "offer" message
+  roomName = rm;
+
   myPeerConnection.addEventListener("datachannel", (event) => {
     myDataChannel = event.channel;
     myDataChannel.addEventListener("message", (event) => {
@@ -361,11 +378,13 @@ socket.on("offer", async (offer) => {
   myPeerConnection.setRemoteDescription(offer);
   const answer = await myPeerConnection.createAnswer();
   myPeerConnection.setLocalDescription(answer);
-  socket.emit("answer", answer, roomName);
+  socket.emit("answer", answer, roomName, userd.email);
   console.log("sent the answer");
 });
 
-socket.on("answer", (answer) => {
+socket.on("answer", (answer, useremail) => {
+  peersLabel.innerHTML = `${useremail}`;
+
   // When the server sends an "answer" message
   console.log("received the answer");
   myPeerConnection.setRemoteDescription(answer);
@@ -385,6 +404,7 @@ socket.on("bye", async () => {
   if (peersFace?.srcObject) {
     handleRemoveStream();
   }
+  peersLabel.innerHTML = "";
 
   // Close and Create new RTCPeerConnection to standby for peer
   regenerateConnection();
@@ -395,7 +415,7 @@ socket.on("bye", async () => {
 function makeConnection() {
   myPeerConnection = new RTCPeerConnection({
     iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
+      // { urls: "stun:stun.l.google.com:19302" },
       {
         urls: [
           "turn:eu-0.turn.peerjs.com:3478",
