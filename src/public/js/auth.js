@@ -30,7 +30,7 @@ function init() {
   pb.authStore.save(auth.token, auth.model);
 
   const input = welcome.querySelector("input");
-  input.value = auth.model.username;
+  input.value = auth.model.email;
 
   login.hidden = !showLogin;
   welcome.hidden = showLogin;
@@ -64,7 +64,7 @@ async function handleLogin() {
     localStorage.setItem("userd", JSON.stringify(data));
 
     const input = welcomeForm.querySelector("input");
-    input.value = data.username;
+    input.value = data.email;
     showLogin = false;
   } catch (error) {
     loginMessage = error;
