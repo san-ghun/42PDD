@@ -45,7 +45,11 @@ async function initCall() {
   await getMedia("", "camera");
   makeConnection();
   const userd = JSON.parse(localStorage.getItem("userd"));
-  myLabel.innerHTML = `${userd.email}`;
+  if (!userd) {
+    myLabel.innerHTML = welcomeForm.querySelector("input").value;
+  } else {
+    myLabel.innerHTML = `${userd.email}`;
+  }
 }
 
 // Handle the submission of the welcome form (joining a room)
@@ -289,6 +293,8 @@ async function handleLeaveClick(event) {
   welcome.hidden = false;
   call.hidden = true;
   roomName = "";
+  // TODO: find a way to handle roomName better than just a empty string
+  // TODO: reset the mic and video options
 }
 
 function handleChatClick() {
@@ -415,7 +421,9 @@ socket.on("bye", async () => {
 function makeConnection() {
   myPeerConnection = new RTCPeerConnection({
     iceServers: [
-      // { urls: "stun:stun.l.google.com:19302" },
+      {
+        urls: ["stun:stun.l.google.com:19302", "stun:openrelay.metered.ca:80"],
+      },
       {
         urls: [
           "turn:eu-0.turn.peerjs.com:3478",

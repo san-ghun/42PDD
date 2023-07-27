@@ -1,0 +1,104 @@
+doctype html
+html(lang="en")
+    head
+        meta(charset="UTF-8")
+        meta(http-equiv="X-UA-Compatible", content="IE=edge")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        title 42 Peer Duck Debugging dev
+        link(rel="stylesheet", href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css")
+        link(rel="stylesheet", href="../public/css/style.css")
+        script(src="/public/js/pocketbase.umd.js")
+        script(src="/public/js/app.js", defer) 
+        //- script(src="/public/js/auth.js", defer)
+        script(src="/public/js/themeswitcher.js", defer) 
+    body 
+        //- Login
+        //- div#login.container
+        //-     article
+        //-         header
+        //-             div.headings
+        //-                 h1 42 Peer Duck Debugging dev
+        //-                 h3 A peer-to-peer debugging session for 42 School
+        //-         button#login-button Login with 42
+        //-         mark#login-message Welcome!
+
+        //- Welcome
+        div#welcome.container
+            article
+                header
+                    div.headings
+                        h1 42 Peer Duck Debugging dev
+                        h3 A peer-to-peer debugging session for 42 School
+                form 
+                    label(for="roomname") Room name (your intra)
+                        input#roomname(type="text", name="roomname", placeholder="Enter the room name", required)
+                        small Create OR Open a Room 
+                    fieldset
+                        //- label(for="switch") 
+                            input#random-input(type="checkbox", name="switch", role="switch") 
+                            span 
+                                small <strong>DO NOT</strong> allow Random Peer to join
+                    button(type="submit") Create room
+                footer 
+                    div.headings
+                        h4 or Meet a Random Peer
+                        h5 Let's explore to meet our random peers
+                    button#random-button.contrast I'm Feeling Random 🤞
+            h3 To Logout!
+            button#logout-button.outline Logout
+
+        //- Call
+        div#call.container
+            nav
+                ul 
+                    li 
+                        h1 42 Peer Duck Debugging dev
+                ul
+                    li 
+                        details(role="list", dir="rtl")
+                            summary(aria-haspopup="listbox", role="link") Tools
+                            ul(role="listbox") 
+                                li 
+                                    kbd Code-sharing 💻 
+                                li
+                                    a(href="https://codesandbox.io/", target="_blank") CodeSandbox
+                                li 
+                                    a(href="https://replit.com/", target="_blank") Replit
+                                li 
+                                    a(href="https://codeshare.io/", target="_blank") Codeshare.io
+                                li 
+                                    kbd Whiteboard 🎨 
+                                li
+                                    a(href="https://excalidraw.com/", target="_blank") Excalidraw
+                                li
+                                    a(href="https://webwhiteboard.com/", target="_blank") WebWhiteboard
+                    li
+                        button(role="button")#chat.outline Open Chat
+
+            div.grid
+                div#peersVideo(data-tooltip="When peer join, Right-click and use pip mode for convenience")
+                    small 
+                    video#peersFace(autoplay, playsinline, width="100%", height="100%")
+                div#myVideo
+                    video#myFace(autoplay, playsinline, width="100%", height="100%")
+                    small 
+        
+            div.container#chat-wrapper(style={display: 'none'})
+                div#chat-content-wrapper
+                    ul
+                form#chat-input
+                    textarea(placeholder="Press Enter To Send Message", required)
+
+            article
+                div.grid
+                    button#mic Mic.
+                    button#camera Camera
+                div.grid
+                    label(for="audio_input") Audio input
+                        select#audios 
+                    label(for="video_input") Video input    
+                        select#cameras 
+                //- button#next.contrast Next Room
+                button#leave.secondary Leave Room
+
+    script(src="/socket.io/socket.io.js") 
