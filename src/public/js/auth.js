@@ -63,9 +63,19 @@ async function handleLogin() {
 
     localStorage.setItem("userd", JSON.stringify(data));
 
-    const input = welcomeForm.querySelector("input");
-    input.value = data.email;
-    showLogin = false;
+    if (inEval) {
+      alert(
+        "Seems you are waiting for evaluation. \n\nTo secure the value of 42, please login after your evaluation."
+      );
+      loginMessage = "Please login after you finish your evaluation.";
+      loginMark.innerHTML = loginMessage;
+      pb.authStore.clear();
+      showLogin = true;
+    } else {
+      const input = welcomeForm.querySelector("input");
+      input.value = data.email;
+      showLogin = false;
+    }
   } catch (error) {
     loginMessage = error;
     loginMark.innerHTML = loginMessage;
