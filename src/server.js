@@ -26,6 +26,7 @@ app.use("/public", express.static(__dirname + "/public"));
 
 // Define route handlers
 app.get("/", (req, res) => res.render("home"));
+app.get("/ft_dev", (req, res) => res.render("ft_dev"));
 app.get("/*", (req, res) => res.redirect("/"));
 
 // Create an HTTP server using the Express app
@@ -84,13 +85,13 @@ wsServer.on("connection", (socket) => {
     socket.to(roomName).emit("ice", ice);
   });
 
-  // TODO: Handle leaving a room and send a bye message
+  // Handle leaving a room and send a bye message
   socket.on("leave_room", (roomName) => {
     socket.to(roomName).emit("bye");
     socket.leave(roomName);
   });
 
-  // TODO: Handle disconnect
+  // Handle disconnect
   socket.on("disconnect", (reason) => {
     socket.to(socket.roomName).emit("bye", reason);
   });
