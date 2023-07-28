@@ -44,29 +44,62 @@ instrument(wsServer, {
   auth: false,
 });
 
+// Keep track of the occupancy of rooms
+const roomMap = new Map();
+
 // Handle incoming WebSocket connections
 wsServer.on("connection", (socket) => {
   // Handle joining a room and sending a welcome message
   socket.on("join_room", (roomName) => {
+    // If room is full, reject user's request
+    if (roomMap.has(roomName) && roomMap.get(roomName) >= 2) {
+      socket.emit("is_fullroom");
+      return;
+    }
+
     socket.join(roomName);
+
+    // Update the room occupancy count for the room in roomMap
+    if (roomMap.has(roomName)) {
+      roomMap.set(roomName, roomMap.get(roomName) + 1);
+    } else {
+      roomMap.set(roomName, 1);
+    }
+
     socket.to(roomName).emit("welcome");
   });
 
   // Handle joining a random room and sending a random_welcome message
-  socket.on("join_random", () => {
-    const rooms = wsServer.of("/").adapter.rooms;
+  socket.on("join_random", (roomName) => {
+    const roomKeys = Array.from(roomMap.keys());
     const regex = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}$");
 
-    const roomKeys = Array.from(rooms.keys());
     const pubRooms = roomKeys.filter((element) => regex.test(element));
 
     const length = pubRooms.length;
     const randomIndex = Math.random() * length;
     const roundedIndex = Math.floor(randomIndex);
 
-    const theRoom = pubRooms[roundedIndex];
+    let theRoom = pubRooms[roundedIndex];
+
+    // If room is full, reject user's request
+    if (roomMap.has(theRoom) && roomMap.get(theRoom) >= 2) {
+      socket.emit("is_fullroom");
+      return;
+    } else if (theRoom === undefined) {
+      theRoom = roomName;
+    }
 
     socket.join(theRoom);
+
+    // Update the room occupancy count for the room in roomMap
+    if (roomMap.has(theRoom)) {
+      roomMap.set(theRoom, roomMap.get(theRoom) + 1);
+    } else {
+      roomMap.set(theRoom, 1);
+    }
+
+    socket.emit("get_room_name", theRoom);
     socket.to(theRoom).emit("welcome");
   });
 
@@ -88,12 +121,27 @@ wsServer.on("connection", (socket) => {
   // Handle leaving a room and send a bye message
   socket.on("leave_room", (roomName) => {
     socket.to(roomName).emit("bye");
+    if (roomMap.has(roomName) && roomMap.get(roomName) > 0) {
+      roomMap.set(roomName, roomMap.get(roomName) - 1);
+    }
+    if (roomMap.get(roomName) === 0) {
+      roomMap.delete(roomName);
+    }
     socket.leave(roomName);
   });
 
   // Handle disconnect
-  socket.on("disconnect", (reason) => {
-    socket.to(socket.roomName).emit("bye", reason);
+  socket.on("disconnecting", (reason) => {
+    const rms = Array.from(socket.rooms.keys());
+    rms.forEach((room) => {
+      if (roomMap.has(room) && roomMap.get(room) > 0) {
+        roomMap.set(room, roomMap.get(room) - 1);
+      }
+      if (roomMap.get(room) === 0) {
+        roomMap.delete(room);
+      }
+      socket.to(room).emit("bye", reason);
+    });
   });
 });
 
