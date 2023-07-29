@@ -45,13 +45,22 @@ async function initCall() {
   await getMedia("", "camera");
   makeConnection();
   const userd = JSON.parse(localStorage.getItem("userd"));
-  myLabel.innerHTML = `${userd.email}`;
+  if (!userd) {
+    myLabel.innerHTML = welcomeForm.querySelector("input").value;
+  } else {
+    myLabel.innerHTML = `${userd.email}`;
+  }
 }
 
 // Handle the submission of the welcome form (joining a room)
 async function handleWelcomeSubmit(event) {
   event.preventDefault();
   const input = welcomeForm.querySelector("input");
+  const regex = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}$");
+  if (!regex.test(input.value)) {
+    alert("Please enter valid intra.");
+    return;
+  }
   await initCall();
   socket.emit("join_room", input.value); // Send a "join_room" message to the server with the room name
   roomName = input.value; // Save the room name in the global variable
@@ -64,8 +73,14 @@ async function handleWelcomeSubmit(event) {
 
 async function handleJoinRandom(event) {
   event.preventDefault();
+  const input = welcomeForm.querySelector("input");
+  const regex = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+.[a-zA-Z]{2,}$");
+  if (!regex.test(input.value)) {
+    alert("Please enter valid intra.");
+    return;
+  }
   await initCall();
-  socket.emit("join_random");
+  socket.emit("join_random", input.value);
 }
 
 // Add an event listener to the welcome form's submit event
@@ -281,6 +296,8 @@ async function handleLeaveClick(event) {
     handleRemoveStream();
   }
 
+  peersLabel.innerHTML = "";
+
   // Send "leave-room" message to server
   socket.emit("leave_room", roomName);
   console.log("Sent leave_room message");
@@ -289,6 +306,8 @@ async function handleLeaveClick(event) {
   welcome.hidden = false;
   call.hidden = true;
   roomName = "";
+  // TODO: find a way to handle roomName better than just a empty string
+  // TODO: reset the mic and video options
 }
 
 function handleChatClick() {
@@ -344,9 +363,20 @@ chatTextArea.addEventListener("keydown", (keyboardEvent) => {
 
 // Socket Events
 // Set up socket event listeners
+socket.on("get_room_name", async (rm) => {
+  console.log("get_room_name");
+  roomName = rm;
+});
+
 socket.on("welcome", async () => {
   const userd = JSON.parse(localStorage.getItem("userd"));
-  myLabel.innerHTML = `${userd.email}`;
+  let userd_email;
+  if (!userd) {
+    userd_email = welcomeForm.querySelector("input").value;
+  } else {
+    userd_email = `${userd.email}`;
+  }
+  myLabel.innerHTML = userd_email;
 
   // When the server sends a "welcome" message
   myDataChannel = myPeerConnection.createDataChannel("chat"); // Create a new data channel named "chat"
@@ -358,11 +388,17 @@ socket.on("welcome", async () => {
   const offer = await myPeerConnection.createOffer();
   myPeerConnection.setLocalDescription(offer);
   console.log("sent the offer");
-  socket.emit("offer", offer, roomName, userd.email);
+  socket.emit("offer", offer, roomName, userd_email);
 });
 
 socket.on("offer", async (offer, rm, useremail) => {
   const userd = JSON.parse(localStorage.getItem("userd"));
+  let userd_email;
+  if (!userd) {
+    userd_email = welcomeForm.querySelector("input").value;
+  } else {
+    userd_email = `${userd.email}`;
+  }
   peersLabel.innerHTML = `${useremail}`;
 
   // When the server sends an "offer" message
@@ -378,7 +414,7 @@ socket.on("offer", async (offer, rm, useremail) => {
   myPeerConnection.setRemoteDescription(offer);
   const answer = await myPeerConnection.createAnswer();
   myPeerConnection.setLocalDescription(answer);
-  socket.emit("answer", answer, roomName, userd.email);
+  socket.emit("answer", answer, roomName, userd_email);
   console.log("sent the answer");
 });
 
@@ -396,9 +432,9 @@ socket.on("ice", (ice) => {
   myPeerConnection.addIceCandidate(ice);
 });
 
-socket.on("bye", async () => {
+socket.on("bye", async (reason) => {
   // When the server sends a "bye" message
-  console.log("received the bye");
+  console.log(`received the bye: ${reason}`);
 
   // Stop PeersStream
   if (peersFace?.srcObject) {
@@ -410,12 +446,19 @@ socket.on("bye", async () => {
   regenerateConnection();
 });
 
+socket.on("is_fullroom", () => {
+  alert("The room is full. Try again later or join a different room.");
+  handleLeaveClick();
+});
+
 // RTC Code
 // Creates a new RTCPeerConnection with the given iceServers configuration
 function makeConnection() {
   myPeerConnection = new RTCPeerConnection({
     iceServers: [
-      // { urls: "stun:stun.l.google.com:19302" },
+      {
+        urls: ["stun:stun.l.google.com:19302", "stun:openrelay.metered.ca:80"],
+      },
       {
         urls: [
           "turn:eu-0.turn.peerjs.com:3478",
@@ -472,6 +515,6 @@ function handleRemoveStream() {
 // Close myPeerConnection and Create new RTCPeerConnection
 async function regenerateConnection() {
   await myPeerConnection.close();
-  myPeerConnection = undefined;
+  myPeerConnection = null;
   makeConnection();
 }
